@@ -7,7 +7,7 @@ struct stackNode {Number* content; struct stackNode *next;};
 
 typedef struct stack_t{
 	struct stackNode* topNode;
-	int nbElements;
+	int length;
 } Stack;
 
 Stack* createStack(){
@@ -17,7 +17,7 @@ Stack* createStack(){
 		return NULL;
 	} else {	
 		stack_p->topNode = NULL;
-		stack_p->nbElements = 0;
+		stack_p->length = 0;
 		return stack_p;
 	}
 }
@@ -30,7 +30,7 @@ void push(Stack *stack_p, Number* elementToAdd){
 	newStackTop->next = stack_p->topNode;
 	//Update the stack
 	stack_p->topNode = newStackTop;
-	(stack_p->nbElements)++;
+	(stack_p->length)++;
 }
 
 Number* pop(Stack *stack_p){
@@ -46,7 +46,7 @@ Number* pop(Stack *stack_p){
 	Number* c = currentTopNode->content;
 	// Update the stack
 	stack_p->topNode = currentTopNode->next;
-	(stack_p->nbElements)--;
+	(stack_p->length)--;
 	free(currentTopNode);
 	return c;
 }
@@ -58,14 +58,15 @@ int main(){
 	Number* number_p;
 	char c;
 	while ((c = getchar()) != EOF){
-		if (c =='p'){
-			number_p = pop(stack_p);
-			if (number_p != NULL) printNumber(number_p);
-		}
-		else if (c != '\n'){
+		if (c >= '0' && c <= '9'){
 			number_p = createNumberFromWordCommandLine(1, c);
 			push(stack_p, number_p);
 		}
+		else if (c =='p'){
+			number_p = pop(stack_p);
+			if (number_p != NULL) printNumber(number_p);
+		}
+		else continue;
 	}
 	return 0;
 }
