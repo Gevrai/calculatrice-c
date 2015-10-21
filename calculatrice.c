@@ -2,92 +2,140 @@
 #include <stdlib.h>
 #include <string.h>
 
-struct cell {int figure; struct cell *next; };
+#define PROGRAM_END 0
+#define SYNTAX_ERROR 1
+#define MALLOC_ERROR 2
+#define VAR_ERROR 3
 
-typedef struct num {int isPositive; struct cell *number; };
+#include "stack.c"
 
-struct stackNode {char content; struct stackNode *next;};
+struct VariableNode {
+	Number *number;
+	char name;
+	struct VariableNode *next;
+};
 
-char* pop(struct stackNode *stackPointer){
-	if (stackPointer != NULL){
-		char* content = (*stackPointer).content;
-		struct stackNode* temp = stackPointer;
-		stackPointer = (*stackPointer).next;
-		free(temp);
-		return content;
-	} else {
+struct VariableNode *listVariable_head = NULL;
+
+Number* getVariable(char c){
+	struct VariableNode *currentNode = listVariable_head;
+	while (currentNode != NULL){
+		if (currentNode->name == c)
+			return currentNode->number;
+		currentNode = currentNode->next;
+	}
+	return NULL;
+}
+
+struct VariableNode* createVariableNode(Number *n, char c){
+	struct VariableNode *newNode = malloc(sizeof(struct VariableNode));
+	if (newNode == NULL){
+		printf("ERREUR MEMOIRE !!!!!!!!!!!!!!\n");
 		return NULL;
 	}
+	newNode->number = n;
+	newNode->name = c;
+	newNode->next = NULL;
+	return newNode;
 }
 
-void push(struct stackNode* stackPointer, char content){
-	struct stackNode *newStackTop = malloc(sizeof(struct stackNode));
-	(*newStackTop).content = content;
-	(*newStackTop).next = stackPointer;
-	stackPointer = newStackTop;
-	printf("New element %s added to stack\n", content);
+void assignNumberToVar(Number *n, char c){
+	struct VariableNode *currentNode = listVariable_head;
+	// Is the variable list empty?
+	if (currentNode == NULL){
+		listVariable_head = createVariableNode(n,c);
+		return;
+	}
+	// Variable already assigned to something?
+	while (1){
+		if (currentNode->name == c){
+			currentNode->number = n;
+			return;
+		}
+		if (currentNode->next == NULL){
+			currentNode->next = createVariableNode(n,c);
+			return;
+		}
+		currentNode = currentNode->next;
+	}
 }
 
-int charToInt(char c){
-	return c - '0';
+int correctSyntax(char c){
+	if (c != ' ' || c != '\0' || c != '\n'){
+		printf("Erreur de syntaxe: Les variables doivent etre composees d'un seul charactere.\n");
+		return 0;
+	}
+	return 1;
 }
 
-/*
-stackNode readCommandLineActive(stackNode *stack){
+int readCommandLine(){
+	initNumberStack();
 	printf("> ");
+
 	char c;
-	cell prevCell;
-	int guard = 0; //variable sentinelle pour le fin d<un traitement
+	Number *n1, *n2, *ntemp;
 	while ((c = getchar()) != '\0'){
 		if ((c >= '0') && (c <= '9')) {
-			if(guard == 0){
-				//create a new number
-				guard = 1;
-				num number = malloc(sizeof(num));
-				cell numeral = malloc(sizeof(numeral));
-
-				numeral.chiffre = charToInt(c);
-				number.positif = 1;
-				number.chiffres = &numeral;
-			}
-			else{
-				//add a character to the current number
-				cell next = malloc(sizeof(next));
-				numeral.chiffre = charToInt(c);
-				numeral.suivant = &next;
-			}
-
+			push(createNumberFromWordCommandLine(c));
 		}
-		else if (c == ' '){
-			guard = 0;
-		}; //traitement ' '
-		else if (c == '+') ;//traitement '+'
-		else if (c == '-') ;//traitement '-'
-		else if (c == '*') ;//traitement '*'
-		else if (c >= 'a' && c >= 'z') ;//traitement variables
-		else if (c == '=') ;//traitement assignation
-		else if (c == EOF) return;
-		else break;
+		else if (c == ' ');
+		else if (c == '+') {
+			n2 = pop();
+			n1 = pop();
+			ntemp = addNumbers(n1,n2);
+			push(ntemp);   
+		}
+		else if (c == '-') {
+			n2 = pop();
+			n1 = pop();
+			ntemp = substractNumbers(n1,n2);
+			push(ntemp);
+		}
+		else if (c == '*') {
+			n2 = pop();
+			n1 = pop();
+			ntemp = multiplyNumbers(n1,n2);
+			push(ntemp);
+		}
+		else if (c >= 'a' && c <= 'z') {
+			ntemp = getVariable(c);
+			push(ntemp);
+		}
+		else if (c == '=') {
+			c = getchar();
+			ntemp = pop();
+			assignNumberToVar(ntemp, c);
+			push(ntemp);
+		}
+		else if (c == EOF)
+			return PROGRAM_END;
+		else if (c == '\n')
+			break;
+		else
+		{
+			printf("Erreur syntaxe: Symbole %c invalide.\n", c);
+			break;
+		}
 	}
-	printf("\n");
+
+	ntemp = pop();
+	if (ntemp == NULL){
+		printf("Erreur de syntaxe: Pas assez d'arguments\n");
+		return SYNTAX_ERROR;
+	}
+	if (pop() != NULL){
+		printf("Erreur de syntaxe: Trop d'arguments");
+		return SYNTAX_ERROR;
+	}
+
+	printNumber(ntemp);
 }
-*/
 
 int main(){
-	struct stackNode *stackPointer = NULL;
-	char c;
-	//stackPointer = readCommandLineActive(stack);
-	while ((c = getchar()) != EOF){
-		if (c == 'p'){
-			char *elementPointer = pop(stackPointer);
-			if (elementPointer != NULL){
-				printf("%s\n", *elementPointer);
-			} else {
-				printf("No more elements in stack\n");
-			}
-		} else {
-			push(stackPointer, c);
-		}
+	int code;
+	while((code = readCommandLine()) != PROGRAM_END)
+	{
+
 	}
 	return 0;
 }

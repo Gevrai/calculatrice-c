@@ -1,72 +1,61 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include "number.c"
 
-struct stackNode {Number* content; struct stackNode *next;};
+struct stackNode {Number* number; struct stackNode *next;};
 
 typedef struct stack_t{
 	struct stackNode* topNode;
-	int length;
-} Stack;
+} NumberStack;
 
-Stack* createStack(){
-	Stack *stack_p = malloc(sizeof(Stack));
-	if (stack_p == NULL){
-		printf("Can't allocate memory for stack!\n"); //------------------------------------------------------------- ERROR MESSAGE
-		return NULL;
-	} else {	
-		stack_p->topNode = NULL;
-		stack_p->length = 0;
-		return stack_p;
+NumberStack *stack = NULL;
+
+void initNumberStack(){
+	struct stackNode *currentStackNode, *tempNode;
+	// Stack already exists?
+	if (stack != NULL){
+		currentStackNode = stack->topNode;
+		while (currentStackNode != NULL){
+			deleteNumber(currentStackNode->number);
+			tempNode = currentStackNode;
+			currentStackNode = currentStackNode->next;
+			free(tempNode);
+		}
+		stack->topNode = NULL;
+		return;
 	}
+	// Stack doesn't exist
+	stack = malloc(sizeof(NumberStack));
+	if (stack == NULL){
+		printf("Can't allocate memory for stack!\n"); //------------------------------------------------------------- ERROR MESSAGE
+		return;
+	}
+	
+	stack->topNode = NULL;
+	return;
 }
 
-void push(Stack *stack_p, Number* elementToAdd){
+void push(Number* elementToAdd){
 	//Allocate memory for new Node
 	struct stackNode *newStackTop = malloc(sizeof(struct stackNode));
+	if (newStackTop == NULL){
+		printf("le malloc a foirer");
+	}
 	//Construct the new top Node
-	newStackTop->content = elementToAdd;
-	newStackTop->next = stack_p->topNode;
+	newStackTop->number = elementToAdd;
+	newStackTop->next = stack->topNode;
 	//Update the stack
-	stack_p->topNode = newStackTop;
-	(stack_p->length)++;
+	stack->topNode = newStackTop;
 }
 
-Number* pop(Stack *stack_p){
-	struct stackNode *currentTopNode = stack_p->topNode;
-
+Number* pop(){
+	struct stackNode *currentTopNode = stack->topNode;
 	// Empty Stack?
 	if (currentTopNode == NULL){
-		printf("Stack is currently empty.\n");
 		return NULL;
 	}
-
 	// Fetch top value
-	Number* c = currentTopNode->content;
+	Number* number = currentTopNode->number;
 	// Update the stack
-	stack_p->topNode = currentTopNode->next;
-	(stack_p->length)--;
+	stack->topNode = currentTopNode->next;
 	free(currentTopNode);
-	return c;
-}
-
-int main(){
-	Stack *stack_p = createStack();
-	if (stack_p == NULL) return 0;
-
-	Number* number_p;
-	char c;
-	while ((c = getchar()) != EOF){
-		if (c >= '0' && c <= '9'){
-			number_p = createNumberFromWordCommandLine(1, c);
-			push(stack_p, number_p);
-		}
-		else if (c =='p'){
-			number_p = pop(stack_p);
-			if (number_p != NULL) printNumber(number_p);
-		}
-		else continue;
-	}
-	return 0;
+	return number;
 }

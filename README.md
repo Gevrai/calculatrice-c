@@ -7,6 +7,9 @@ Memory Verification: Valgrind
 - 999 algorithm pour addition de nombres négatifs?
 - Trimer les zéros inutiles au début d'un nombre
 - Vérifier que les nombres ne soient pas vide avant opérations
+- variables only lowercase letter?
+- initNumberStack make sure to free old stack's memory allocation
+- initNumberStack write method to free instead of harcoding it
 
 
 
@@ -57,3 +60,9 @@ mult(Number n1, n2)
 	}
 
 	retourne number;
+
+	TYPES D'ERREURS:
+
+	- Syntaxe
+	- Allocation de memoire
+	- Utilisation de variable non-alloue
