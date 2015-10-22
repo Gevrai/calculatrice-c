@@ -2,13 +2,65 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define PROGRAM_END 0
-#define PROGRAM_CONTINUE 1
-#define SYNTAX_ERROR 2
-#define MALLOC_ERROR 3
-#define VAR_ERROR 4
+#define PROGRAM_CONTINUE 0
+#define CRITICAL_ERROR 1
+#define PROGRAM_END 2
+ 
+#define SYNTAX_ERROR 3
+#define MALLOC_ERROR 4
+#define VAR_ERROR 5
+#define NUMBER_ERROR 6
+#define ARGUMENT_ERROR 7
 
 #include "number.c"
+
+int errorCode = NULL;
+char errMsg[64] = NULL;
+int throwError(int errorType, char *errorMessage){
+	/*send an error name and message here to have them printed out
+	Also check if the error is trivial (ret 0) or if the memory had to be dumped (ret 1)
+	format for error throwing in the code is:
+	
+		errorCode = ERROR_TYPE;
+		strcpy(errMsg, "Error message\n");
+		
+	The actual throwing is done in readCommandLine() automatically.
+	*/
+	switch (errorType)
+	{
+		//Program end
+		case PROGRAM_END
+			printf("%s\n", errorMessage);
+			errorCode = NULL;
+			return 1;
+		//Syntax error
+		case SYNTAX_ERROR
+			printf("%s\n", errorMessage);
+			errorCode = NULL;
+			return 0;
+		//Memory error
+		case MALLOC_ERROR
+			printf("%s\n", errorMessage);
+			errorCode = NULL;
+			return 1;
+		//Variable error
+		case VAR_ERROR
+			printf("%s\n", errorMessage);
+			errorCode = NULL;
+			return 0;
+		//Stack argument error
+		case ARGUMENT_ERROR
+			printf("%s\n", errorMessage);
+			errorCode = NULL;
+			return 0;
+		//Number error
+		case NUMBER_ERROR
+			printf("%s\n", errorMessage);
+			errorCode = NULL;
+			return 1;
+	}
+	return 0;
+}
 
 struct VariableNode {
 	Number *number;
@@ -171,18 +223,25 @@ int readCommandLine(){
 			break;
 		}
 	}
+	
+	if (errorCode != NULL)
+	{
+		return throwError(errorCode, errMsg);
+	}
 
 	n1 = pop();
 	ntemp = pop();
 	if (n1 == NULL){
-		printf("Erreur de syntaxe: Pas assez d'arguments\n");
-		return SYNTAX_ERROR;
+		errorCode = ARGUMENT_ERROR;
+		strcpy(errMsg, "Erreur de syntaxe: Pas assez d'arguments\n");
+		return throwError(errorCode, errMsg);
 	}
 	if (ntemp != NULL){
-		printf("Erreur de syntaxe: Trop d'arguments\n");
+		errorCode = ARGUMENT_ERROR;
+		strcpy(errMsg, "Erreur de syntaxe: Pas assez d'arguments\n");
 		deleteNumberIfNotAVariable(ntemp);
 		deleteNumberIfNotAVariable(n1);
-		return SYNTAX_ERROR;
+		return throwError(errorCode, errMsg);
 	}
 
 	printNumber(n1);
@@ -191,12 +250,20 @@ int readCommandLine(){
 }
 
 int main(){
-	int code;
-	while(code = readCommandLine())
+	int code = NULL;
+	while(code = readCommandLine() == PROGRAM_CONTINUE)
 	{
-
+		//Normal execution
 	}
-	deleteVariableList();
-	deleteStack();
+	//If there is a critical error, dump memory and start the main again
+	if (code == CRITICAL_ERROR){
+		deleteStack();
+		main();
+	}
+	//If the quit code is sent, close the program
+	if (code == PROGRAM_END){
+		deleteVariableList();
+		deleteStack();
+	} 
 	return 0;
 }
