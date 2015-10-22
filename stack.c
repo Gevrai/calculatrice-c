@@ -1,5 +1,3 @@
-#include "number.c"
-
 struct stackNode {Number* number; struct stackNode *next;};
 
 typedef struct stack_t{
@@ -10,11 +8,12 @@ NumberStack *stack = NULL;
 
 void initNumberStack(){
 	struct stackNode *currentStackNode, *tempNode;
+	Number *tempNumber;
 	// Stack already exists?
 	if (stack != NULL){
 		currentStackNode = stack->topNode;
 		while (currentStackNode != NULL){
-			deleteNumber(currentStackNode->number);
+			deleteNumberIfNotAVariable(currentStackNode->number);
 			tempNode = currentStackNode;
 			currentStackNode = currentStackNode->next;
 			free(tempNode);
@@ -31,6 +30,14 @@ void initNumberStack(){
 	
 	stack->topNode = NULL;
 	return;
+}
+
+void deleteStack(){
+	if (stack != NULL){
+		initNumberStack();
+		free(stack);
+		stack = NULL;
+	}
 }
 
 void push(Number* elementToAdd){

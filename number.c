@@ -16,6 +16,13 @@ struct cell* createCell(int digit){
 	return newCell;
 }
 
+Number* createNumber(){
+	Number *result = malloc(sizeof(Number));
+	result->first_p = NULL;
+	result->sign = 1;
+	return result;
+}
+
 void deleteNumber(Number* number){
 	struct cell *tempCell,
 				*currentCell = number->first_p;
@@ -55,7 +62,8 @@ void trimZeros(Number *number){
 	}
 }
 
-// Recursive function...
+
+/* Recursive function...
 void printCells(struct cell *cell_p){
 	if (cell_p->next_p)
 		printCells(cell_p->next_p);
@@ -68,11 +76,34 @@ void printNumber(Number *number){
 	printCells(number->first_p);
 	printf("\n");
 }
+*/
+void printNumber(Number *number){
+	if ((number->sign) < 0) 
+		printf("-");
+	//init variables
+	struct cell *startCell, *currentCell, *endCell;
+	startCell = number -> first_p;
+	endCell = number -> first_p;
+	currentCell = number -> first_p;
+	
+	// point to the last cell in the list
+	while(endCell -> next_p != NULL)
+		endCell = endCell -> next_p;
+	
+	//Double loop that reads the list in reverse order
+	while(endCell != startCell)
+	{
+		currentCell = startCell;
+		while(currentCell->next_p != endCell)
+			currentCell = currentCell->next_p;
+		printf("%d", endCell->digit);
+		endCell = currentCell;
+	}
+	printf("%d\n", endCell->digit);
+}
 
 Number* addNumbers(Number *n1, Number *n2){
-	// Init the new number (result of the sum)
-	Number *result = malloc(sizeof(Number));
-	result->first_p = NULL;
+	Number *result = createNumber();
 
 	//Necessary variables for calculations
 	int carry = 0,
@@ -180,8 +211,7 @@ Number* addNumbers(Number *n1, Number *n2){
 Number* substractNumbers(Number *n1, Number *n2){
 	Number *result;
 	if (n1 == n2){
-		result = malloc(sizeof(Number));
-		result->sign = 1;
+		result = createNumber();
 		result->first_p = createCell(0);
 		return result;
 	}
@@ -193,8 +223,7 @@ Number* substractNumbers(Number *n1, Number *n2){
 
 Number* multiplyNumbers(Number *n1, Number *n2){
 
-	Number *result = malloc(sizeof(Number));
-	if (result == NULL) ; // -------------------------------------------------------------------------------- MEMORY ERROR
+	Number *result = createNumber();
 	result->first_p = createCell(0);
 	// Same sign means result is positive, otherwise it's negative.
 	result->sign = (n1->sign == n2->sign) ? 1 : -1;
@@ -256,9 +285,7 @@ Number* createNumberFromWordCommandLine(char c){
 	//
 	ungetc(c,stdin);
 	// Set up Number and return
-	Number *number = malloc(sizeof(Number));
-	if (number == NULL);	// --------------------------------------------------------------------------------------------MEMORY ERROR
-	number->sign = 1;
+	Number *number = createNumber();
 	number->first_p = currentCell_p;
 
 	trimZeros(number);
