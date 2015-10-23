@@ -10,7 +10,11 @@ typedef struct {
 
 struct cell* createCell(int digit){
 	struct cell *newCell = malloc(sizeof(struct cell));
-	if (newCell == NULL) ;//------------------------------------------------------------------------------------ MEMORY ERROR
+	if (newCell == NULL){
+		errorCode = MALLOC_ERROR;
+		strcpy(errMsg, "Erreur d'allocation: Pas assez de memoire pour creer un nombre");
+		return NULL;
+	}
 	newCell->digit = digit;
 	newCell->next_p = NULL;
 	return newCell;
@@ -18,19 +22,27 @@ struct cell* createCell(int digit){
 
 Number* createNumber(){
 	Number *result = malloc(sizeof(Number));
+	if (result == NULL){
+		errorCode = MALLOC_ERROR;
+		strcpy(errMsg, "Erreur d'allocation: Pas assez de memoire pour creer un nombre");
+		return NULL;
+	}
 	result->first_p = NULL;
 	result->sign = 1;
 	return result;
 }
 
-void deleteNumber(Number* number){
-	struct cell *tempCell,
-				*currentCell = number->first_p;
+void deleteCells(struct cell *currentCell){
+	struct cell *tempCell;
 	while(currentCell != NULL){
 		tempCell = currentCell->next_p;
 		free(currentCell);
 		currentCell = tempCell;
 	}
+}
+
+void deleteNumber(Number* number){
+	deleteCells(number->first_p);
 	free(number);
 	number = NULL;
 }
@@ -104,6 +116,7 @@ void printNumber(Number *number){
 
 Number* addNumbers(Number *n1, Number *n2){
 	Number *result = createNumber();
+	if (result == NULL) return NULL;
 
 	//Necessary variables for calculations
 	int carry = 0,
@@ -114,6 +127,7 @@ Number* addNumbers(Number *n1, Number *n2){
 				*c2_current,
 				*cr_current,
 				*ctemp;
+	// Dummy variable to continue treatment when a number is bigger than the other
 	struct cell czero;
 	czero.digit = 0;
 	czero.next_p = &czero;
@@ -133,7 +147,10 @@ Number* addNumbers(Number *n1, Number *n2){
 	while ((!c1_done) || (!c2_done)){
 		// Init new cell
 		ctemp = createCell(0);
-
+		if (ctemp == NULL){
+			deleteCells(cr_current);
+			return NULL;
+		}
 		//DEGUEU: initialise numbers head digit
 		if (result->first_p == NULL)
 			result->first_p = ctemp;
@@ -175,6 +192,10 @@ Number* addNumbers(Number *n1, Number *n2){
 		// Case 1 only : result take either n1 or n2's sign
 		result->sign = n1->sign;
 		ctemp = createCell(carry);
+		if (ctemp == NULL){
+			deleteCells(cr_current);
+			return NULL;
+		}
 		cr_current->next_p = ctemp;
 	}
 	else if (carry < 0){
@@ -192,6 +213,10 @@ Number* addNumbers(Number *n1, Number *n2){
 			ctemp = cr_current->next_p;
 			if (ctemp == NULL){
 				ctemp = createCell(0);
+				if (ctemp == NULL){
+					deleteCells(cr_current);
+					return NULL;
+				}
 				cr_current->next_p = ctemp;
 			}
 			ctemp->digit += 1; // ctemp <=> cr_current->next_p
@@ -212,7 +237,13 @@ Number* substractNumbers(Number *n1, Number *n2){
 	Number *result;
 	if (n1 == n2){
 		result = createNumber();
+		if (result == NULL)
+			return NULL;
 		result->first_p = createCell(0);
+		if (result->first_p == NULL){
+			deleteNumber(result);
+			return NULL;
+		}
 		return result;
 	}
 	n2->sign = -(n2->sign);
@@ -224,7 +255,13 @@ Number* substractNumbers(Number *n1, Number *n2){
 Number* multiplyNumbers(Number *n1, Number *n2){
 
 	Number *result = createNumber();
+	if (result == NULL) return NULL;
 	result->first_p = createCell(0);
+	if (result->first_p == NULL){
+		deleteNumber(result);
+		return NULL;
+	}
+
 	// Same sign means result is positive, otherwise it's negative.
 	result->sign = (n1->sign == n2->sign) ? 1 : -1;
 
@@ -243,6 +280,10 @@ Number* multiplyNumbers(Number *n1, Number *n2){
 				ctemp = cr_current->next_p;
 				if(ctemp == NULL){
 					ctemp = createCell(0);
+					if (ctemp == NULL){
+						deleteCells(cr_current);
+						return NULL;
+					}
 					cr_current->next_p = ctemp;
 				}
 				cr_current = ctemp;
@@ -254,6 +295,10 @@ Number* multiplyNumbers(Number *n1, Number *n2){
 				ctemp = cr_current->next_p;
 				if (ctemp == NULL){
 					ctemp = createCell(0);
+					if (ctemp == NULL){
+						deleteCells(cr_current);
+						return NULL;
+					}
 					cr_current->next_p = ctemp;
 				}
 				ctemp->digit += cr_current->digit / 10;// ctemp <=> cr_current->next_p
@@ -275,10 +320,15 @@ Number* multiplyNumbers(Number *n1, Number *n2){
 Number* createNumberFromWordCommandLine(char c){
 	// Create first cell
 	struct cell *currentCell_p = createCell(charToInt(c));
+	if (currentCell_p == NULL) return NULL;
 
 	//Continue reading line until invalid character
 	while ((c = getchar()) >= '0' && c <= '9'){
 		struct cell *newCell_p = createCell(charToInt(c));
+		if (newCell_p == NULL){
+			deleteCells(currentCell_p);
+			return NULL;
+		}
 		newCell_p->next_p = currentCell_p;
 		currentCell_p = newCell_p;
 	}
@@ -286,6 +336,10 @@ Number* createNumberFromWordCommandLine(char c){
 	ungetc(c,stdin);
 	// Set up Number and return
 	Number *number = createNumber();
+	if (number == NULL){
+		deleteCells(currentCell_p);
+		return NULL;
+	}
 	number->first_p = currentCell_p;
 
 	trimZeros(number);

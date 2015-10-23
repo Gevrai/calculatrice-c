@@ -6,7 +6,7 @@ typedef struct stack_t{
 
 NumberStack *stack = NULL;
 
-void initNumberStack(){
+int initNumberStack(){
 	struct stackNode *currentStackNode, *tempNode;
 	Number *tempNumber;
 	// Stack already exists?
@@ -19,17 +19,18 @@ void initNumberStack(){
 			free(tempNode);
 		}
 		stack->topNode = NULL;
-		return;
+		return 1;
 	}
 	// Stack doesn't exist
 	stack = malloc(sizeof(NumberStack));
 	if (stack == NULL){
-		printf("Can't allocate memory for stack!\n"); //------------------------------------------------------------- ERROR MESSAGE
-		return;
+		errorCode = MALLOC_ERROR;
+		strcpy(errMsg, "Erreur d'allocation: Pas assez de memoire pour creer la pile");
+		return 0;
 	}
 	
 	stack->topNode = NULL;
-	return;
+	return 1;
 }
 
 void deleteStack(){
@@ -44,7 +45,9 @@ void push(Number* elementToAdd){
 	//Allocate memory for new Node
 	struct stackNode *newStackTop = malloc(sizeof(struct stackNode));
 	if (newStackTop == NULL){
-		printf("le malloc a foirer");
+		errorCode = MALLOC_ERROR;
+		strcpy(errMsg, "Erreur d'allocation: Pas assez de memoire pour creer un la pile");
+		return;
 	}
 	//Construct the new top Node
 	newStackTop->number = elementToAdd;

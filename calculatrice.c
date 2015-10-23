@@ -5,18 +5,18 @@
 #define PROGRAM_CONTINUE 0
 #define CRITICAL_ERROR 1
 #define PROGRAM_END 2
- 
 #define SYNTAX_ERROR 3
 #define MALLOC_ERROR 4
 #define VAR_ERROR 5
 #define NUMBER_ERROR 6
 #define ARGUMENT_ERROR 7
 
+int errorCode = PROGRAM_CONTINUE;
+char errMsg[64] = "";
+
 #include "number.c"
 
-int errorCode = NULL;
-char errMsg[64] = NULL;
-int throwError(int errorType, char *errorMessage){
+int throwError(){
 	/*send an error name and message here to have them printed out
 	Also check if the error is trivial (ret 0) or if the memory had to be dumped (ret 1)
 	format for error throwing in the code is:
@@ -26,40 +26,40 @@ int throwError(int errorType, char *errorMessage){
 		
 	The actual throwing is done in readCommandLine() automatically.
 	*/
-	switch (errorType)
+	switch (errorCode)
 	{
 		//Program end
-		case PROGRAM_END
-			printf("%s\n", errorMessage);
-			errorCode = NULL;
-			return 1;
+		case PROGRAM_END:
+			printf("%s\n", errMsg);
+			errorCode = PROGRAM_CONTINUE;
+			return PROGRAM_END;
 		//Syntax error
-		case SYNTAX_ERROR
-			printf("%s\n", errorMessage);
-			errorCode = NULL;
-			return 0;
+		case SYNTAX_ERROR:
+			printf("%s\n", errMsg);
+			errorCode = PROGRAM_CONTINUE;
+			return PROGRAM_CONTINUE;
 		//Memory error
-		case MALLOC_ERROR
-			printf("%s\n", errorMessage);
-			errorCode = NULL;
-			return 1;
+		case MALLOC_ERROR:
+			printf("%s\n", errMsg);
+			errorCode = PROGRAM_CONTINUE;
+			return CRITICAL_ERROR;
 		//Variable error
-		case VAR_ERROR
-			printf("%s\n", errorMessage);
-			errorCode = NULL;
-			return 0;
+		case VAR_ERROR:
+			printf("%s\n", errMsg);
+			errorCode = PROGRAM_CONTINUE;
+			return PROGRAM_CONTINUE;
 		//Stack argument error
-		case ARGUMENT_ERROR
-			printf("%s\n", errorMessage);
-			errorCode = NULL;
-			return 0;
+		case ARGUMENT_ERROR:
+			printf("%s\n", errMsg);
+			errorCode = PROGRAM_CONTINUE;
+			return PROGRAM_CONTINUE;
 		//Number error
-		case NUMBER_ERROR
-			printf("%s\n", errorMessage);
-			errorCode = NULL;
-			return 1;
+		case NUMBER_ERROR:
+			printf("%s\n", errMsg);
+			errorCode = PROGRAM_CONTINUE;
+			return CRITICAL_ERROR;
 	}
-	return 0;
+	return PROGRAM_CONTINUE;
 }
 
 struct VariableNode {
@@ -125,7 +125,9 @@ Number* getVariable(char c){
 struct VariableNode* createVariableNode(Number *n, char c){
 	struct VariableNode *newNode = malloc(sizeof(struct VariableNode));
 	if (newNode == NULL){
-		printf("ERREUR MEMOIRE !!!!!!!!!!!!!!\n");
+		errorCode = MALLOC_ERROR;
+		strcpy(errMsg, "Erreur d'allocation: Pas assez de memoire pour creer la variable '%c'");
+		sprintf(errMsg, c);
 		return NULL;
 	}
 	newNode->number = n;
@@ -162,27 +164,34 @@ void assignNumberToVar(Number *n, char c){
 
 int correctSyntax(char c){
 	if (c != ' ' || c != '\0' || c != '\n'){
-		printf("Erreur de syntaxe: Les variables doivent etre composees d'un seul charactere.\n");
+		errorCode = SYNTAX_ERROR;
+		strcpy(errMsg, "Erreur de syntaxe: Variables doivent etre un seul charactere");
 		return 0;
 	}
 	return 1;
 }
 
 int readCommandLine(){
-	initNumberStack();
+	if (!initNumberStack())
+		throwError();
 	printf("> ");
 
 	char c;
 	Number *n1, *n2, *ntemp;
 	while ((c = getchar()) != '\0'){
 		if ((c >= '0') && (c <= '9')) {
-			push(createNumberFromWordCommandLine(c));
+			n1 = createNumberFromWordCommandLine(c);
+			if (n1 == NULL)
+				break;
+			push(n1);
 		}
 		else if (c == ' ');
 		else if (c == '+') {
 			n2 = pop();
 			n1 = pop();
 			ntemp = addNumbers(n1,n2);
+			if (ntemp == NULL)
+				break;
 			push(ntemp);
 			deleteNumberIfNotAVariable(n1);
 			deleteNumberIfNotAVariable(n2);
@@ -191,6 +200,8 @@ int readCommandLine(){
 			n2 = pop();
 			n1 = pop();
 			ntemp = substractNumbers(n1,n2);
+			if (ntemp == NULL)
+				break;
 			push(ntemp);
 			deleteNumberIfNotAVariable(n1);
 			deleteNumberIfNotAVariable(n2);
@@ -199,11 +210,15 @@ int readCommandLine(){
 			n2 = pop();
 			n1 = pop();
 			ntemp = multiplyNumbers(n1,n2);
+			if (ntemp == NULL)
+				break;
 			push(ntemp);
 			deleteNumberIfNotAVariable(n1);
 			deleteNumberIfNotAVariable(n2);
 		}
 		else if (c >= 'a' && c <= 'z') {
+			if(!correctSyntax(getchar()))
+				break;
 			ntemp = getVariable(c);
 			push(ntemp);
 		}
@@ -219,29 +234,29 @@ int readCommandLine(){
 			break;
 		else
 		{
-			printf("Erreur syntaxe: Symbole %c invalide.\n", c);
+			errorCode = SYNTAX_ERROR;
+			strcpy(errMsg, "Erreur de syntaxe: Symbole '%c' invalide");
+			sprintf(errMsg, c);
 			break;
 		}
 	}
 	
-	if (errorCode != NULL)
-	{
-		return throwError(errorCode, errMsg);
-	}
+	if (errorCode != PROGRAM_CONTINUE)
+		return throwError();
 
 	n1 = pop();
 	ntemp = pop();
 	if (n1 == NULL){
 		errorCode = ARGUMENT_ERROR;
-		strcpy(errMsg, "Erreur de syntaxe: Pas assez d'arguments\n");
-		return throwError(errorCode, errMsg);
+		strcpy(errMsg, "Erreur de syntaxe: Pas assez d'arguments");
+		return throwError();
 	}
 	if (ntemp != NULL){
 		errorCode = ARGUMENT_ERROR;
-		strcpy(errMsg, "Erreur de syntaxe: Pas assez d'arguments\n");
+		strcpy(errMsg, "Erreur de syntaxe: Trop d'arguments");
 		deleteNumberIfNotAVariable(ntemp);
 		deleteNumberIfNotAVariable(n1);
-		return throwError(errorCode, errMsg);
+		return throwError();
 	}
 
 	printNumber(n1);
@@ -250,20 +265,19 @@ int readCommandLine(){
 }
 
 int main(){
-	int code = NULL;
-	while(code = readCommandLine() == PROGRAM_CONTINUE)
+	int code;
+	while(1)
 	{
-		//Normal execution
+		code = readCommandLine();
+		if (code == PROGRAM_CONTINUE)
+			continue;
+		if (code == CRITICAL_ERROR)
+			deleteStack();
+		if (code == PROGRAM_END)
+			break;
 	}
-	//If there is a critical error, dump memory and start the main again
-	if (code == CRITICAL_ERROR){
-		deleteStack();
-		main();
-	}
-	//If the quit code is sent, close the program
-	if (code == PROGRAM_END){
-		deleteVariableList();
-		deleteStack();
-	} 
+
+	deleteVariableList();
+	deleteStack();
 	return 0;
 }
