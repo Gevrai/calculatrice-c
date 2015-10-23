@@ -761,7 +761,7 @@ int main(int argc, char **argv){
 			printf("Aucune memoire disponible: Programme inutilisable sans memoire, voulez-vous quitter? (o/..)\n");
 			c = getchar();
 			if (c == 'o')
-				code = PROGRAM_END;
+				break;
 		}
 		while(getchar() != '\n'); //empty command line if it still has characters	
 		if (code == PROGRAM_CONTINUE)
