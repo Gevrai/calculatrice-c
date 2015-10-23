@@ -1,5 +1,7 @@
 # calculatrice-c
 
+TODO: Merge files together!
+
 Memory Verification: Valgrind
 
 - Redo print numbers not recursively.
