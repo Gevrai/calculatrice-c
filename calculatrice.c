@@ -1,7 +1,18 @@
+/*
+|----------------------------------------------------------|
+|                     IFT 2035 TP #1                       |
+| @Author: Gevrai Jodoin Tremblay                          |
+| @Author: Benoit Rainville                                |
+! Last edited: 10/23/2015                                  |
+|----------------------------------------------------------|
+*/
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+//Just simple macros to make error throwing more obvious
 #define PROGRAM_CONTINUE 0
 #define CRITICAL_ERROR 1
 #define PROGRAM_END 2
@@ -118,6 +129,11 @@ Number* getVariable(char c){
 		if (currentNode->name == c)
 			return currentNode->number;
 		currentNode = currentNode->next;
+	}
+	if (currentNode == NULL)
+	{
+		strcpy(errMsg, "Erreur de variable: impossible de trouver la variable '%c'");
+		sprintf(errMsg, c);
 	}
 	return NULL;
 }
@@ -271,9 +287,9 @@ int main(){
 		code = readCommandLine();
 		if (code == PROGRAM_CONTINUE)
 			continue;
-		if (code == CRITICAL_ERROR)
+		else if (code == CRITICAL_ERROR)
 			deleteStack();
-		if (code == PROGRAM_END)
+		else if (code == PROGRAM_END)
 			break;
 	}
 
